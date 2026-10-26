@@ -1,0 +1,29 @@
+name: Backend CI
+
+on:
+  push:
+    paths:
+      - "packages/backend/**"
+      - "packages/shared/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    paths:
+      - "packages/backend/**"
+      - "packages/shared/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: |
+          pip install -e packages/shared
+          pip install -e "packages/backend[dev]"
+      - name: Lint
+        run: ruff check packages/backend packages/shared
+      - name: Test
+        run: pytest packages/backend packages/shared
