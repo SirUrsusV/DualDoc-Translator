@@ -1,6 +1,6 @@
 import sys
 from PySide6.QtWidgets import QApplication
-from app.ui.main_window import MainWindow
+from dualdoc_client.ui.main_window import MainWindow
 
 
 def main():
