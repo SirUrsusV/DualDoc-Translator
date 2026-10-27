@@ -27,3 +27,10 @@ cd packages/client
 pip install -e ../shared -e .
 python -m dualdoc_client.main
 
+```
+
+## Docker (бэкенд + БД + Redis)
+
+```bash
+docker compose up
+```
