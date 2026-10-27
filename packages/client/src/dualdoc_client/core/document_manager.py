@@ -7,7 +7,11 @@ class DocumentManager:
     Хранит состояние документа в памяти в виде словаря, 
     соответствующего схеме .dualtrans.
     """
-    def create_document(self, name, source_lang, target_lang):
+    def __init__(self, parser, serializer):
+        self.parser = parser
+        self.serializer = serializer
+
+    def create_document(self, name, source_lang, target_lang, user_id):
         """
         Создает новый пустой документ в памяти.
 
@@ -15,6 +19,7 @@ class DocumentManager:
             name (str): Название документа.
             source_lang (str): Код исходного языка.
             target_lang (str): Код целевого языка.
+            user_id (str): ID пользователя, создавшего документ
 
         Возвращает:
             dict: Словарь с инициализированной структурой документа.
@@ -26,13 +31,13 @@ class DocumentManager:
             # Генерируем уникальный ID и приводим к строке для корректной записи в JSON
             "document_id": str(uuid4()),
             "name": name,
+            "original_author": user_id,
             "source_lang": source_lang,
             "target_lang": target_lang,
             # Форматируем время под стандарт ISO 8601
             "created_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
             "updated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-            # Две временные заглушки
-            "author": '0',
+            # Временная заглушка
             "team_id": "0"
             },
             "content": {
