@@ -1,6 +1,7 @@
-import ijson
 import json
 import os
+
+import ijson
 
 
 class DualtransSerializer:
