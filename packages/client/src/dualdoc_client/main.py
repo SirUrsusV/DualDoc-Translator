@@ -1,15 +1,16 @@
-"""Точка входа desktop-приложения."""
 import sys
-from PySide6.QtWidgets import QApplication, QMainWindow, QLabel
+from PySide6.QtWidgets import QApplication
+from dualdoc_client.ui.main_window import MainWindow
 
-def main() -> int:
+
+def main():
     app = QApplication(sys.argv)
-    window = QMainWindow()
-    window.setWindowTitle("DualDoc Translator")
-    window.resize(1200, 800)
-    window.setCentralWidget(QLabel("Здесь будет редактор", alignment=0x0084))
+    window = MainWindow()
     window.show()
-    return app.exec()
+
+
+    sys.exit(app.exec())
+
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
