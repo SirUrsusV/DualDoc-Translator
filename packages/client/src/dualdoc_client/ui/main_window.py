@@ -9,6 +9,8 @@ from PySide6.QtWidgets import (
     QStatusBar,
     QTabWidget,
     QToolBar,
+    QVBoxLayout,
+    QWidget,
 )
 
 from dualdoc_client.controllers.document_controller import DocumentController
