@@ -1,6 +1,7 @@
 """Общие перечисления."""
 from enum import Enum
 
+
 class ParagraphStatus(str, Enum):
     NOT_TRANSLATED = "not_translated"
     IN_PROGRESS = "in_progress"
