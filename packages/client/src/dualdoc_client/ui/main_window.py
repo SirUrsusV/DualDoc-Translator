@@ -1,14 +1,14 @@
-from PySide6.QtWidgets import (
-    QMainWindow,
-    QToolBar,
-    QTabWidget,
-    QStatusBar,
-    QWidget,
-    QLabel,
-    QVBoxLayout,
-)
-from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QAction, QKeySequence
+from PySide6.QtWidgets import (
+    QLabel,
+    QMainWindow,
+    QStatusBar,
+    QTabWidget,
+    QToolBar,
+    QVBoxLayout,
+    QWidget,
+)
 
 from dualdoc_client.controllers.project_controller import ProjectController
 
