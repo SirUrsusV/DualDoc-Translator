@@ -10,8 +10,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from dualdoc_client.controllers.project_controller import ProjectController
-
 
 class MainWindow(QMainWindow):
     'Главное окно DualDoc Translator (этап 1, п. 6.1).'
