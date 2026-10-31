@@ -1,5 +1,4 @@
 from PySide6.QtCore import Qt
-from dualdoc_client.controllers.project_controller import ProjectController
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import (
     QLabel,
@@ -10,6 +9,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+from dualdoc_client.controllers.project_controller import ProjectController
 
 
 class MainWindow(QMainWindow):
