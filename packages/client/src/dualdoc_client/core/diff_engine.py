@@ -74,5 +74,5 @@ class DiffEngine:
             # Очистка: если язык не имеет изменений, удаляем его 
             if changes_commit[lang_i] == {"added": [], "modified": [], "removed": []}:
                  del changes_commit[lang_i]
-        return {"changes_commit": changes_commit}
+        return {"changes": changes_commit}
 

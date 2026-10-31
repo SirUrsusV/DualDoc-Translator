@@ -5,6 +5,7 @@ description = "Shared models, schemas, and .dualtrans serializer"
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.6",
+    "ijson",
 ]
 
 [build-system]
