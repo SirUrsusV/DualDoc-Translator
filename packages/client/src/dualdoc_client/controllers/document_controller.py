@@ -2,19 +2,30 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
+from dualdoc_shared.serializer import DualtransSerializer
 from PySide6.QtCore import QObject, Signal
 
 from dualdoc_client.core.document_manager import DocumentManager
+from dualdoc_client.core.parser.parser_source import SourceParser
+
+
+def _build_default_manager() -> DocumentManager:
+    return DocumentManager(
+        parser=SourceParser(),
+        serializer=DualtransSerializer(),
+    )
 
 
 class DocumentController(QObject):
+    'Связка UI ↔ DocumentManager / Services. Реальный save/load через serializer.'
 
-    document_loaded = Signal(object)   # dict документа
-    document_saved = Signal(str)       # path
-    paragraph_translated = Signal(str, str)  # para_id, text
-    commit_created = Signal(str)       # message
+    document_loaded = Signal(object)
+    document_saved = Signal(str)
+    paragraph_translated = Signal(str, str)
+    commit_created = Signal(str)
     status_message = Signal(str)
     error_occurred = Signal(str)
 
@@ -25,19 +36,15 @@ class DocumentController(QObject):
         parent=None,
     ):
         super().__init__(parent)
-        self._manager = document_manager or DocumentManager()
+        self._manager = document_manager or _build_default_manager()
         self.user_id = user_id
-
-        #Поля из ТЗ
         self.document: dict[str, Any] | None = None
-        self.api_client = None   # позже ApiClient
-        self.local_mt = None     # позже LocalMtEngine
+        self.api_client = None
+        self.local_mt = None
         self._file_path: str | None = None
 
-    #загрузка / сохранение
-
     def load_document(self, doc_id: str) -> None:
-        'id-заглушка'
+        'doc_id на этом этапе — путь к .dualtrans.'
         path = str(doc_id).strip()
         if not path:
             self.error_occurred.emit("Пустой id/путь документа")
@@ -45,16 +52,15 @@ class DocumentController(QObject):
 
         try:
             loaded = self._manager.load_from_dualtrans(path)
-        except Exception as exc:  # noqa: BLE001 — каркас, пока менеджер TODO
+        except FileNotFoundError:
+            self.error_occurred.emit(f"Файл не найден: {path}")
+            return
+        except Exception as exc:  # noqa: BLE001
             self.error_occurred.emit(f"Ошибка загрузки: {exc}")
-            self.status_message.emit(f"load_document: менеджер ещё TODO ({path})")
             return
 
-        if loaded is None:
-            #load_from_dualtrans сейчас pass → None
-            self.status_message.emit(
-                f"Загрузка {path}: serializer ещё не готов (заглушка)"
-            )
+        if not loaded:
+            self.error_occurred.emit(f"Пустой документ: {path}")
             return
 
         self.document = loaded
@@ -68,17 +74,17 @@ class DocumentController(QObject):
             return
 
         path = self._file_path or "untitled.dualtrans"
-        self._apply_user_to_document()
+        self._touch_updated_at()
 
         try:
             self._manager.save_to_dualtrans(self.document, path)
         except Exception as exc:  # noqa: BLE001
             self.error_occurred.emit(f"Ошибка сохранения: {exc}")
-            self.status_message.emit(f"save_document: менеджер ещё TODO ({path})")
             return
 
+        self._file_path = path
         self.document_saved.emit(path)
-        self.status_message.emit(f"Сохранено (заглушка manager): {path}")
+        self.status_message.emit(f"Сохранено: {path}")
 
     def create_new_document(
         self,
@@ -87,40 +93,36 @@ class DocumentController(QObject):
         target_lang: str = "ru",
         file_path: str | None = None,
     ) -> None:
-        'создать документ через manager + user_id.'
-        doc = self._manager.create_document(name, source_lang, target_lang)
-        #Подставляем user id (вместо "0" из менеджера)
-        if "metadata" in doc:
-            meta = doc["metadata"]
-            if "author" in meta:
-                meta["author"] = self.user_id
+        try:
+            doc = self._manager.create_document(
+                name, source_lang, target_lang, self.user_id
+            )
+        except TypeError:
+            #на случай старой сигнатуры без user_id
+            doc = self._manager.create_document(name, source_lang, target_lang)
+            meta = doc.setdefault("metadata", {})
             meta["original_author"] = self.user_id
+
         self.document = doc
         self._file_path = file_path
         self.document_loaded.emit(self.document)
         self.status_message.emit(f"Создан документ: {name}")
 
-    #перевод / коммит / ИИ (заглушки)
-
     def translate_paragraph(self, para_id: str, text: str) -> None:
-        'Позже: online → api_client, offline → local_mt.'
         para_id = str(para_id)
         text = text or ""
 
         if self.api_client is not None:
-            #translated = self.api_client.post_translation(...)
             self.status_message.emit("translate: ApiClient ещё не подключён")
             return
         if self.local_mt is not None:
-            #translated = self.local_mt.translate(...)
             self.status_message.emit("translate: LocalMtEngine ещё не подключён")
             return
 
-        #Заглушка: «перевод» = тот же текст с пометкой
         fake = f"[MT] {text}" if text else ""
         self._set_paragraph_translation(para_id, fake, status="translated")
         self.paragraph_translated.emit(para_id, fake)
-        self.status_message.emit(f"Перевод абзаца {para_id} (заглушка)")
+        self.status_message.emit(f"Перевод абзаца {para_id} (заглушка MT)")
 
     def create_commit(self, message: str) -> None:
         if self.document is None:
@@ -129,32 +131,35 @@ class DocumentController(QObject):
 
         message = (message or "update").strip()
         history = self.document.setdefault("version_history", [])
+        parent = history[-1]["commit_hash"] if history else None
         history.append(
             {
                 "commit_hash": f"local-{len(history) + 1}",
                 "message": message,
+                "timestamp": datetime.now(UTC).strftime(
+                    "%Y-%m-%dT%H:%M:%SZ"
+                ),
                 "author": self.user_id,
-                "parent_hash": history[-1]["commit_hash"] if history else None,
+                "parent_hash": parent,
                 "changes": {},
             }
         )
         self.commit_created.emit(message)
-        self.status_message.emit(f"Коммит (локально в памяти): {message}")
+        self.status_message.emit(f"Коммит: {message}")
 
     def apply_ai_suggestion(self, para_id: str, text: str) -> None:
         para_id = str(para_id)
         self._set_paragraph_translation(para_id, text or "", status="edited")
         self.paragraph_translated.emit(para_id, text or "")
-        self.status_message.emit(f"AI-правка абзаца {para_id} (заглушка)")
+        self.status_message.emit(f"AI-правка абзаца {para_id}")
 
-    #вспомогательное
-
-    def _apply_user_to_document(self) -> None:
+    def _touch_updated_at(self) -> None:
         if not self.document:
             return
         meta = self.document.setdefault("metadata", {})
-        if "author" in meta:
-            meta["author"] = self.user_id
+        meta["updated_at"] = datetime.now(UTC).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        )
         meta.setdefault("original_author", self.user_id)
 
     def _set_paragraph_translation(
