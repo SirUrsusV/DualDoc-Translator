@@ -6,11 +6,10 @@ from PySide6.QtWidgets import (
     QStatusBar,
     QTabWidget,
     QToolBar,
-    QVBoxLayout,
-    QWidget,
 )
 
 from dualdoc_client.controllers.project_controller import ProjectController
+from dualdoc_client.ui.project_tab import ProjectTab
 
 
 class MainWindow(QMainWindow):
@@ -80,15 +79,12 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(self._make_action("ИИ", self._stub))
 
     def open_project(self, project_id: str):
-        'Добавить вкладку проекта (вызывается из ProjectController).'
-        page = QWidget()
-        label = QLabel(f"Проект: {project_id}\n(редактор появится позже)")
-        label.setAlignment(Qt.AlignCenter)
-
-        layout = QVBoxLayout(page)
-        layout.addWidget(label)
-
-        index = self.project_tabs.addTab(page, str(project_id))
+        'Вкладка проекта на ProjectTab (п. 6.2).'
+        tab = ProjectTab(project_id)
+        doc_ctrl = getattr(self, "document_controller", None)
+        if doc_ctrl is not None and getattr(doc_ctrl, "document", None) is not None:
+            tab.load_document(doc_ctrl.document)
+        index = self.project_tabs.addTab(tab, str(project_id))
         self.project_tabs.setCurrentIndex(index)
 
     def close_project(self, project_id: str):
