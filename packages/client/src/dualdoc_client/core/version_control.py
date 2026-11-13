@@ -61,7 +61,7 @@ class VersionControl:
 		"""
 		return document.get("version_history", [])
 
-
+	'''
 	def merge(self, branch1: dict, branch2: dict) -> dict:
 		"""
 		Сливает две ветки (два состояния документа).
@@ -94,6 +94,7 @@ class VersionControl:
 		map_branch1 = {lang: {section["paragraph_id"]: section for section in item_lang} for lang, item_lang in branch1.get("content",{}).get("translations",{}).items()}
 		map_branch2 = {lang: {section["paragraph_id"]: section for section in item_lang} for lang, item_lang in branch2.get("content",{}).get("translations",{}).items()}
 
+		conflicts = []
 		
 		# Проходимся по всем языкам и абзацам из второй ветки
 		for lang, item_lang in map_branch2.items():
@@ -106,7 +107,13 @@ class VersionControl:
 					if map_branch1[lang].get(paragraph_id, False):
 						# Проверяем на конфликт: сравниваем ТОЛЬКО текст
 						if map_branch1[lang][paragraph_id]["text"] != paragraph["text"]:
-							raise ValueError(f"Конфликт в абзаце {paragraph_id}")
+							conflicts.append({
+							"paragraph_id":paragraph_id,
+							"lang": lang,
+							"branch1_text": map_branch1[lang][paragraph_id]["text"],
+							"branch2_text": paragraph["text"]
+							})# добавляем в список id абзаца с конфликтом
+							continue
 					
 					# Если абзаца нет в первой ветке - значит его добавили во второй. Просто добавляем.
 					else:
@@ -133,4 +140,9 @@ class VersionControl:
 				# Заменяем старый список на отфильтрованный
 				merged_doc["content"]["translations"][lang] = new_paragraph
 				
-		return merged_doc
+		return {
+				"status": "conflict" if conflicts else "success",
+				"document": merged_doc,
+				"conflicts": conflicts
+				}
+	'''
