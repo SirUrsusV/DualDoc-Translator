@@ -36,6 +36,7 @@ class MainWindow(QMainWindow):
         self.setStatusBar(self.status_bar)
 
         self.project_controller = ProjectController(self)
+        self._editors = {}
         self.document_controller = DocumentController(user_id="local-user")
         self.version_controller = VersionController()
 
@@ -113,13 +114,16 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(self._make_action("ИИ", self._stub))
 
     def open_project(self, project_id: str):
-        'Вкладка (вызывает ProjectController).'
-        page = QWidget()
-        label = QLabel(f"Проект: {project_id}\n(редактор появится позже)")
-        label.setAlignment(Qt.AlignCenter)
-        layout = QVBoxLayout(page)
-        layout.addWidget(label)
-        index = self.project_tabs.addTab(page, str(project_id))
+        'Вкладка проекта: редактор + версии + ИИ (п. 6.2).'
+        project_id = str(project_id)
+        if project_id in self._editors:
+            self.project_tabs.setCurrentWidget(self._editors[project_id])
+            return
+        tab = ProjectTab(project_id)
+        tab.editor.translate_requested.connect(self._on_translate_requested)
+        tab.editor.paragraph_edited.connect(self._on_paragraph_edited)
+        self._editors[project_id] = tab
+        index = self.project_tabs.addTab(tab, project_id)
         self.project_tabs.setCurrentIndex(index)
 
     def close_project(self, project_id: str):
@@ -167,6 +171,21 @@ class MainWindow(QMainWindow):
         'После коммита — snapshot для rollback/merge.'
         self.version_controller.set_document(self.document_controller.document)
         self.version_controller.attach_snapshot_to_last_commit()
+    def _on_translate_requested(self, para_id: str):
+        self.update_status(f"Перевод абзаца {para_id}: бэкенд подключим позже")
+
+    def _on_paragraph_edited(self, para_id: str, text: str):
+        document = self.document_controller.document
+        if document is None:
+            return
+        content = document.setdefault("content", {})
+        translations = content.setdefault("translations", {})
+        lang = (document.get("metadata") or {}).get("target_lang") or "ru"
+        para_list = translations.setdefault(lang, [])
+        index = int(para_id.split("_")[-1]) - 1
+        while len(para_list) <= index:
+            para_list.append({})
+        para_list[index]["text"] = text
 
     def _on_new_document(self):
         path, _ = QFileDialog.getSaveFileName(
