@@ -75,6 +75,9 @@ class ParagraphRow(QWidget):
 class EditorWidget(QWidget):
     translate_requested = Signal(str)    # para_id
     paragraph_edited = Signal(str, str)  # para_id, текст
+    def on_translate_clicked(self, para_id: str) -> None:
+        """Обработчик кнопки «Перевести»: запрашивает перевод абзаца."""
+        self.translate_requested.emit(para_id)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -125,7 +128,7 @@ class EditorWidget(QWidget):
                 (translations[i].get("status") if i < len(translations) else None)
                 or "draft",
             )
-            row.translate_clicked.connect(self.translate_requested)
+            row.translate_clicked.connect(self.on_translate_clicked)
             row.text_edited.connect(self.paragraph_edited)
             self.paragraph_widgets.append(row)
             self.paragraphs_layout.addWidget(row)
