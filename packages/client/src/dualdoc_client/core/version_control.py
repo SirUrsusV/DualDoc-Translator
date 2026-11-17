@@ -6,39 +6,40 @@ from datetime import datetime
 
 class VersionControl:
 	"""
-	Управление версиями документа (Git-like).
+	Управление версиями документа.
 	Позволяет создавать коммиты, получать историю и сливать ветки.
 	"""
 
-	def create_commit(self, document: dict, message: str, author: str) -> dict:
+	def create_commit(self, document: dict, message: str, author: str, lang: str, changes: dict) -> dict:
 		"""
-		Создает новый коммит и добавляет его в историю документа.
+		Создает и возвращает новый коммит, а также добавляет его в историю документа.
 		
 		Аргументы:
 			document (dict): Текущее состояние документа.
 			message (str): Сообщение коммита (что изменилось).
 			author (str): ID автора коммита.
+			lang (str): язык, для которого создается коммит(подумать над несколькимим языками в одном коммите)
+			changes (dict): изменения от DiffEngine
 			
 		Возвращает:
 			dict: Созданный объект коммита.
 		"""
-		history = document.get("version_history", [])
+		history = document.get("version_history", {})
 		
 		# Определяем хэш родителя (предыдущего коммита).
 		# Если история пуста, значит это первый коммит и родителя нет.
-		if history != []:
-			parent_hash = history[-1]["commit_hash"]
-		else:
-			parent_hash = ""
-			
-		# Генерируем уникальный хэш коммита.
-		# Берем время, сообщение и автора, кодируем в байты и прогоняем через SHA-1.
-		# Обрезаем до 7 символов, чтобы было красиво (как в настоящем Git).
-		identical_str = f"{message}{datetime.now().isoformat()}{author}"
-		commit_hash = hashlib.sha1(identical_str.encode()).hexdigest()[:7]
-
+		lang_list = history.get(lang, [])
+		parent_hash = (lang_list[-1] if lang_list else {}).get("commit_hash", None)
+		
 		# Форматируем время под стандарт
-		timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+		timestamp = datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+		# Генерируем уникальный хэш коммита.
+		# Берем время,родительский хэш сообщение и автора, кодируем в байты и прогоняем через SHA-1.
+		#Обрезаем наращивание хеша длиной родительского, то есть допустимые 32(можно использовать другое число)
+		identical_str = f"{parent_hash}{message}{datetime.now.isoformat()}{author}"
+		commit_hash = hashlib.sha1(identical_str.encode()).hexdigest()[:( len(parent_hash) if parent_hash else 32)]
+
 		
 		# Собираем структуру коммита
 		commit = {
@@ -47,20 +48,20 @@ class VersionControl:
 			"timestamp": timestamp,
 			"author": author,
 			"parent_hash": parent_hash,
-			"changes": {} # TODO: Заглушка. В будущем сюда будет передаваться результат DiffEngine.
+			"changes": changes
 		}
-		
+	
 		# Безопасно добавляем коммит в историю
-		document.setdefault("version_history", []).append(commit)
+		document.setdefault("version_history", {}).setdefault(lang, []).append(commit)
 		return commit
 
 
-	def get_history(self, document: dict) -> list:
+	def get_history(self, document: dict, lang: str) -> list:
 		"""
 		Возвращает список коммитов документа.
 		Если истории нет, возвращает пустой список.
 		"""
-		return document.get("version_history", [])
+		return document.get("version_history", {}).get(lang, [])
 
 	'''
 	def merge(self, branch1: dict, branch2: dict) -> dict:
