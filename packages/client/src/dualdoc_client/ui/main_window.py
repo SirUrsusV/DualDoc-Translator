@@ -9,14 +9,12 @@ from PySide6.QtWidgets import (
     QStatusBar,
     QTabWidget,
     QToolBar,
-    QVBoxLayout,
-    QWidget,
 )
 
 from dualdoc_client.controllers.document_controller import DocumentController
 from dualdoc_client.controllers.project_controller import ProjectController
-from dualdoc_client.ui.project_tab import ProjectTab
 from dualdoc_client.controllers.version_controller import VersionController
+from dualdoc_client.ui.project_tab import ProjectTab
 
 
 class MainWindow(QMainWindow):
