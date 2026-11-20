@@ -1,7 +1,7 @@
 import hashlib
 
 #from copy import deepcopy
-from datetime import datetime
+from datetime import UTC, datetime
 
 
 class VersionControl:
@@ -32,13 +32,13 @@ class VersionControl:
 		parent_hash = (lang_list[-1] if lang_list else {}).get("commit_hash", None)
 		
 		# Форматируем время под стандарт
-		timestamp = datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+		timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 		# Генерируем уникальный хэш коммита.
 		# Берем время,родительский хэш сообщение и автора, кодируем в байты и прогоняем через SHA-1.
 		#Обрезаем наращивание хеша длиной родительского, то есть допустимые 32(можно использовать другое число)
-		identical_str = f"{parent_hash}{message}{datetime.now.isoformat()}{author}"
-		commit_hash = hashlib.sha1(identical_str.encode()).hexdigest()[:( len(parent_hash) if parent_hash else 32)]
+		identical_str = f"{parent_hash}{message}{datetime.now().isoformat()}{author}"
+		commit_hash = hashlib.sha1(identical_str.encode()).hexdigest()[:32]
 
 		
 		# Собираем структуру коммита
